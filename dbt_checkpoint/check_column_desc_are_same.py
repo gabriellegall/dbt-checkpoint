@@ -64,30 +64,51 @@ def get_grouped(
     return grouped
 
 
-def check_column_desc(paths, ignore):
+def check_column_desc(paths: Sequence[str], ignore: Optional[Sequence[str]]) -> Dict[str, Any]:
     status_code = 0
-    # 1. Pull EVERY column from EVERY file into one big list first
     all_columns = []
-    
-    # We need to reach into the generator and pull everything out
+    ignore_list = ignore or []
+
+    print(f"\n=== EXECUTION START ===")
+    print(f"Paths received by script: {paths}")
+
+    # 1. Aggregate ALL columns from ALL paths
     ymls = get_filenames(paths, [".yml", ".yaml"])
-    schemas = get_model_schemas(list(ymls.values()), set(ymls.keys()), True)
+    filenames = set(ymls.keys())
+    schemas = get_model_schemas(list(ymls.values()), filenames, True)
     
-    for col in get_all_columns(schemas, ignore or []):
+    for col in get_all_columns(schemas, ignore_list):
         all_columns.append(col)
-        
-    # 2. NOW sort and group the master list
+
+    print(f"Total columns found across all files: {len(all_columns)}")
+    for c in all_columns:
+        print(f"  - Column '{c.column_name}' found in {c.file.name}")
+
+    # 2. Sort the master list by column name
     all_columns.sort(key=lambda x: x.column_name)
+
+    # 3. Group and Compare
     grouped = groupby(all_columns, lambda x: x.column_name)
 
     for name, groups in grouped:
         group_list = list(groups)
-        group_cnt = Counter([g.description for g in group_list])
-        if len(group_cnt.keys()) > 1:
-            status_code = 1
-            print(f"{red(name)}: has different descriptions:")
-            for desc, cnt in group_cnt.items():
-                print(f"  - {yellow(cnt)}: {yellow(desc)}")
+        # We only care if the column name appears in more than 1 place
+        if len(group_list) > 1:
+            group_cnt = Counter([g.description for g in group_list])
+            
+            print(f"CHECKING: '{name}' (found {len(group_list)} instances)")
+            
+            if len(group_cnt.keys()) > 1:
+                status_code = 1
+                print(f"  [!] CONFLICT FOUND for '{red(name)}'")
+                for desc, count in group_cnt.items():
+                    print(f"      - {yellow(count)} instance(s) with desc: {yellow(desc)}")
+        else:
+            # Optional: print for single instances
+            # print(f"SKIPPING: '{name}' (only found in 1 place)")
+            pass
+
+    print(f"=== EXECUTION END (Status: {status_code}) ===\n")
     return {"status_code": status_code}
 
 
