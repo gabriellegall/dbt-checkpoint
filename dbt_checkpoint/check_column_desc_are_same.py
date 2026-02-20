@@ -63,6 +63,7 @@ def check_column_desc(
 
     for name, groups in grouped:
         group_cnt = Counter([group.description for group in groups])
+        print(f"DEBUG: Column '{name}' found in {len(list(groups))} places. Descriptions: {list(group_cnt.keys())}")
         if len(group_cnt.keys()) > 1:
             status_code = 1
             print(f"{red(name)}: has different descriptions:")
