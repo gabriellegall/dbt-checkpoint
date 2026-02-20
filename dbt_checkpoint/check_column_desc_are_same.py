@@ -64,18 +64,25 @@ def get_grouped(
     return grouped
 
 
-def check_column_desc(
-    paths: Sequence[str], ignore: Optional[Sequence[str]]
-) -> Dict[str, Any]:
+def check_column_desc(paths, ignore):
     status_code = 0
-    grouped = get_grouped(paths, ignore)
+    # 1. Pull EVERY column from EVERY file into one big list first
+    all_columns = []
+    
+    # We need to reach into the generator and pull everything out
+    ymls = get_filenames(paths, [".yml", ".yaml"])
+    schemas = get_model_schemas(list(ymls.values()), set(ymls.keys()), True)
+    
+    for col in get_all_columns(schemas, ignore or []):
+        all_columns.append(col)
+        
+    # 2. NOW sort and group the master list
+    all_columns.sort(key=lambda x: x.column_name)
+    grouped = groupby(all_columns, lambda x: x.column_name)
 
     for name, groups in grouped:
-        group_list = list(groups) 
-        group_cnt = Counter([group.description for group in group_list])
-
-        print(f"DEBUG: Column '{name}' found in {len(group_list)} places. Descriptions: {list(group_cnt.keys())}")
-        
+        group_list = list(groups)
+        group_cnt = Counter([g.description for g in group_list])
         if len(group_cnt.keys()) > 1:
             status_code = 1
             print(f"{red(name)}: has different descriptions:")
