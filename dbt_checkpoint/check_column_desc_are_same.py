@@ -47,11 +47,20 @@ def get_grouped(
     filenames = set(ymls.keys())
 
     schemas = get_model_schemas(list(ymls.values()), filenames, True)
+    columns = list(get_all_columns(schemas, ignore_list)) # Convert to list to print it
 
-    columns = get_all_columns(schemas, ignore_list)
-    grouped = groupby(
-        sorted(columns, key=lambda x: x.column_name), lambda x: x.column_name
-    )
+    print(f"\n--- RAW DATA BEFORE SORTING ({len(columns)} columns) ---")
+    for c in columns:
+        print(f"FILE: {c.file.name} | COL: '{c.column_name}'")
+
+    # The sorting happens here - let's see if it works
+    sorted_cols = sorted(columns, key=lambda x: x.column_name)
+    
+    print(f"\n--- DATA AFTER SORTING ---")
+    for c in sorted_cols:
+        print(f"COL: '{c.column_name}'")
+
+    grouped = groupby(sorted_cols, lambda x: x.column_name)
     return grouped
 
 
