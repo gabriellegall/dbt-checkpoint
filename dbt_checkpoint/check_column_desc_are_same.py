@@ -62,8 +62,11 @@ def check_column_desc(
     grouped = get_grouped(paths, ignore)
 
     for name, groups in grouped:
-        group_cnt = Counter([group.description for group in groups])
-        print(f"DEBUG: Column '{name}' found in {len(list(groups))} places. Descriptions: {list(group_cnt.keys())}")
+        group_list = list(groups) 
+        group_cnt = Counter([group.description for group in group_list])
+
+        print(f"DEBUG: Column '{name}' found in {len(group_list)} places. Descriptions: {list(group_cnt.keys())}")
+        
         if len(group_cnt.keys()) > 1:
             status_code = 1
             print(f"{red(name)}: has different descriptions:")
